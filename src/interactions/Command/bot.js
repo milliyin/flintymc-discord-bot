@@ -58,11 +58,6 @@ module.exports = {
         )
         .addSubcommand(subcommand =>
             subcommand
-                .setName('vote')
-                .setDescription('See if you have voted')
-        )
-        .addSubcommand(subcommand =>
-            subcommand
                 .setName('feedback')
                 .setDescription('Send your opinion about the bot to the developers')
                 .addStringOption(option => option.setName("feedback").setDescription("Your feedback").setRequired(true))
