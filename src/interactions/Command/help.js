@@ -30,12 +30,6 @@ module.exports = {
                             value: "commands-Bothelp",
                         },
                         {
-                            label: `Invite`,
-                            description: `Invite Bot to your server`,
-                            emoji: "📨",
-                            value: "invite-Bothelp",
-                        },
-                        {
                             label: `Support server`,
                             description: `Join the suppport server`,
                             emoji: "❓",
