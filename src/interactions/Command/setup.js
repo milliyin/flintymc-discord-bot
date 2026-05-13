@@ -109,6 +109,12 @@ module.exports = {
         )
         .addSubcommand(subcommand =>
             subcommand
+                .setName('ticketcategories')
+                .setDescription('Post the FlintyMC category ticket panel')
+                .addChannelOption(option => option.setName('channel').setDescription('Channel to post the panel in').setRequired(true))
+        )
+        .addSubcommand(subcommand =>
+            subcommand
                 .setName('deletesetup')
                 .setDescription('Delete a Bot setup')
                 .addStringOption(option =>
