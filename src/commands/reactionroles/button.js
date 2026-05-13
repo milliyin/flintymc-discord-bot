@@ -18,9 +18,9 @@ module.exports = async (client, interaction, args) => {
         const mapped = Object.keys(data.Roles)
             .map((value, index) => {
                 const role = interaction.guild.roles.cache.get(data.Roles[value][0]);
-
+                if (!role) return null;
                 return `${data.Roles[value][1].raw} | ${role}`;
-            }).join("\n");
+            }).filter(x => x !== null).join("\n") || "No roles available";
 
         const reactions = Object.values(data.Roles).map((val) => val[1].raw);
         var sendComponents = await client.buttonReactions("id", reactions)

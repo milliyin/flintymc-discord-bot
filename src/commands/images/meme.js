@@ -5,7 +5,8 @@ module.exports = async (client, interaction, args) => {
     fetch(`https://www.reddit.com/r/memes` + `.json?sort=top&t=week&limit=100`).then(res => res.json()).then(async (json) => {
         let i = Math.floor(Math.random() * json.data.children.length)
         let image = json.data.children[i].data.url
-        let caption = json.data.children[i].data.title
+        let caption = json.data.children[i].data.title || "Untitled"
+        if (caption.length > 256) caption = caption.substring(0, 253) + "..."
         let embed = new Discord.EmbedBuilder()
             .setTitle(caption)
             .setImage(image)

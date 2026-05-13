@@ -18,10 +18,10 @@ module.exports = async (client, interaction, args) => {
         const map = Object.keys(data.Roles)
             .map((value, index) => {
                 const role = interaction.guild.roles.cache.get(data.Roles[value][0]);
-                if(!role) return;
+                if(!role) return null;
 
                 return `${data.Roles[value][1].raw} | ${role}`;
-            }).join("\n");
+            }).filter(x => x !== null).join("\n") || "No roles available";
 
         const menu = new Discord.StringSelectMenuBuilder()
             .setCustomId('reaction_select')

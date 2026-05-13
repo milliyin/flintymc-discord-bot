@@ -5,7 +5,7 @@ const Schema = require("../../database/models/invites");
 module.exports = async (client, interaction, args) => {
     const rawLeaderboard = await Schema.find({ Guild: interaction.guild.id }).sort(([['Invites', 'descending']]));
 
-    if (!rawLeaderboard) return client.errNormal({
+    if (!rawLeaderboard || rawLeaderboard.length === 0) return client.errNormal({
         error: `No data found!`,
         type: 'editreply'
     }, interaction);

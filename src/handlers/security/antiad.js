@@ -98,7 +98,7 @@ module.exports = (client) => {
                                 newMessage.delete();
                                 let error = new Discord.EmbedBuilder()
                                     .setTitle(`${client.emotes.normal.error}・Moderator`)
-                                    .setAuthor(client.user.username, client.user.avatarURL())
+                                    .setAuthor({ name: client.user.username, iconURL: client.user.avatarURL() })
                                     .setDescription(`Discord links are not allowed in this server!`)
                                     .setColor(client.config.colors.error)
                                     .setFooter({ text: client.config.discord.footer })
@@ -117,7 +117,7 @@ module.exports = (client) => {
                                 newMessage.delete();
                                 let error = new Discord.EmbedBuilder()
                                     .setTitle(`${client.emotes.normal.error}・Moderator`)
-                                    .setAuthor(client.user.username, client.user.avatarURL())
+                                    .setAuthor({ name: client.user.username, iconURL: client.user.avatarURL() })
                                     .setDescription(`Discord links are not allowed in this server!`)
                                     .setColor(client.config.colors.error)
                                     .setFooter({ text: client.config.discord.footer })
@@ -147,7 +147,7 @@ module.exports = (client) => {
                                 newMessage.delete();
                                 var error = new Discord.EmbedBuilder()
                                     .setTitle(`${client.emotes.normal.error}・Moderator`)
-                                    .setAuthor(client.user.username, client.user.avatarURL())
+                                    .setAuthor({ name: client.user.username, iconURL: client.user.avatarURL() })
                                     .setDescription(`Links are not allowed in this server!`)
                                     .setColor(client.config.colors.error)
                                     .setFooter({ text: client.config.discord.footer })
@@ -166,7 +166,7 @@ module.exports = (client) => {
                                 newMessage.delete();
                                 var error = new Discord.EmbedBuilder()
                                     .setTitle(`${client.emotes.normal.error}・Moderator`)
-                                    .setAuthor(client.user.username, client.user.avatarURL())
+                                    .setAuthor({ name: client.user.username, iconURL: client.user.avatarURL() })
                                     .setDescription(`Links are not allowed in this server!`)
                                     .setColor(client.config.colors.error)
                                     .setFooter({ text: client.config.discord.footer })

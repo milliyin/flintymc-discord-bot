@@ -59,12 +59,12 @@ module.exports = async (client, interaction, args) => {
         else {
             const output = new Discord.AttachmentBuilder(Buffer.from(outputResponse), { name: 'output.txt' });
             var embed2 = new Discord.EmbedBuilder()
-                .setAuthor(client.user.username, client.user.avatarURL())
+                .setAuthor({ name: client.user.username, iconURL: client.user.avatarURL() })
                 .addFields(
                     { name: "📥┇Input", value: `\`\`\`${code}\`\`\``, inline: false },
                 )
                 .setColor(client.config.colors.succes)
-                .setFooter(client.config.discord.footer)
+                .setFooter({ text: client.config.discord.footer })
                 .setTimestamp();
             interaction.editreply({ embeds: [embed2] });
             await interaction.channel.send({ files: [output] });

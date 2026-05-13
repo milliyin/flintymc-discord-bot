@@ -113,7 +113,7 @@ module.exports = async (client) => {
 
         let embed = client.templateEmbed()
             .setTitle(`${title}`)
-            .setDescription(`${result.toString()}`)
+            .setDescription(result.toString() || "No data found.")
 
         const functiondata = await Functions.findOne({ Guild: interaction.guild.id });
 
