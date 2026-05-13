@@ -14,22 +14,10 @@ module.exports = async (client, interaction, args) => {
                         value: "support-linkspanel",
                     },
                     {
-                        label: `Invite Bot`,
-                        description: `Invite Bot to your server`,
-                        emoji: "📨",
-                        value: "invite-linkspanel",
-                    },
-                    {
                         label: `Community Server`,
                         description: `Join the community server!`,
                         emoji: "🌍",
                         value: "community-linkspanel",
-                    },
-                    {
-                        label: `Top.gg`,
-                        description: `Show the top.gg link`,
-                        emoji: "📃",
-                        value: "top.gg-linkspanel",
                     },
                 ]),
         );

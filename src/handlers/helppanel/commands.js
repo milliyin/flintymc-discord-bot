@@ -113,11 +113,6 @@ module.exports = async (client) => {
             inline: true
         },
         {
-            name: `🎶┆Music`,
-            value: `\`/music help\``,
-            inline: true
-        },
-        {
             name: `📓┆Notepad`,
             value: `\`/notepad help\``,
             inline: true
@@ -210,11 +205,6 @@ module.exports = async (client) => {
                             .setStyle(Discord.ButtonStyle.Secondary),
 
                         new Discord.ButtonBuilder()
-                            .setLabel("Invite")
-                            .setURL(client.config.discord.botInvite)
-                            .setStyle(Discord.ButtonStyle.Link),
-
-                        new Discord.ButtonBuilder()
                             .setLabel("Support server")
                             .setURL(client.config.discord.serverInvite)
                             .setStyle(Discord.ButtonStyle.Link),
@@ -233,12 +223,6 @@ module.exports = async (client) => {
                                     value: "commands-Bothelp",
                                 },
                                 {
-                                    label: `Invite`,
-                                    description: `Invite Bot to your server`,
-                                    emoji: "📨",
-                                    value: "invite-Bothelp",
-                                },
-                                {
                                     label: `Support server`,
                                     description: `Join the suppport server`,
                                     emoji: "❓",
@@ -255,7 +239,7 @@ module.exports = async (client) => {
 
                 client.embed({
                     title: `❓・Help panel`,
-                    desc: `View all command categories in the bot here! \n\n[Website](https://github.com/FlintyMc) | [Invite](${client.config.discord.botInvite}) | [Vote](https://top.gg/bot/1503830253028773928/vote)`,
+                    desc: `View all command categories in the bot here! \n\n[Website](https://github.com/FlintyMc) | [Support](${client.config.discord.serverInvite})`,
                     image: "https://cdn.discordapp.com/attachments/843487478881976381/874694194474668052/Bot_banner_invite.jpg",
                     fields: fields.slice(0, 24),
                     components: [row2, row],
@@ -270,7 +254,7 @@ module.exports = async (client) => {
                             if (page == 1) {
                                 client.embed({
                                     title: `❓・Help panel`,
-                                    desc: `View all command categories in the bot here! \n\n[Website](https://github.com/FlintyMc) | [Invite](${client.config.discord.botInvite}) | [Vote](https://top.gg/bot/1503830253028773928/vote)`,
+                                    desc: `View all command categories in the bot here! \n\n[Website](https://github.com/FlintyMc) | [Support](${client.config.discord.serverInvite})`,
                                     fields: fields.slice(25, 49),
                                     components: [row2, row],
                                     type: 'update'
@@ -283,7 +267,7 @@ module.exports = async (client) => {
                             if (page == 2) {
                                 client.embed({
                                     title: `❓・Help panel`,
-                                    desc: `View all command categories in the bot here! \n\n[Website](https://github.com/FlintyMc) | [Invite](${client.config.discord.botInvite}) | [Vote](https://top.gg/bot/1503830253028773928/vote)`,
+                                    desc: `View all command categories in the bot here! \n\n[Website](https://github.com/FlintyMc) | [Support](${client.config.discord.serverInvite})`,
                                     fields: fields.slice(0, 24),
                                     components: [row2, row],
                                     type: 'update'

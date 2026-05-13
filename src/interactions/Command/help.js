@@ -65,7 +65,7 @@ module.exports = {
                 },
                 {
                     name: `🔗┆Links`,
-                    value: `[Website](https://github.com/FlintyMc) | [Invite](${client.config.discord.botInvite}) | [Vote](https://top.gg/bot/1503830253028773928/vote)`
+                    value: `[Website](https://github.com/FlintyMc) | [Support](${client.config.discord.serverInvite})`
                 },
             ],
             components: [row],
