@@ -50,5 +50,11 @@ module.exports = async (client) => {
     }, 50000)
 
     client.player.init(client.user.id);
+
+    client.guilds.cache.forEach(guild => {
+        if (!client.config.discord.allowedGuilds.includes(guild.id)) {
+            guild.leave();
+        }
+    });
 }
 

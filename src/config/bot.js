@@ -11,6 +11,11 @@ module.exports = {
         footer: `© FlintyMc ${new Date().getFullYear()}`,
         botInvite: `https://discord.com/oauth2/authorize?&client_id=1503830253028773928&scope=applications.commands+bot&permissions=8`,
         serverInvite: "https://discord.gg/qHXxpQKC2H",
+        allowedGuilds: [
+            '1503063234880471070', // FlintyMC (main)
+            '1503065287426048182', // FlintyMC Support
+            '1503063967570985231', // FlintyMC Staff
+        ],
     },
 
     wordList: `Airplane

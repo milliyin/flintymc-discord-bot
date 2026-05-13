@@ -7,6 +7,8 @@ const verify = require("../../database/models/verify");
 const Commands = require("../../database/models/customCommand");
 const CommandsSchema = require("../../database/models/customCommandAdvanced");
 module.exports = async (client, interaction) => {
+    if (!client.config.discord.allowedGuilds.includes(interaction.guildId)) return;
+
     // Commands
     if (interaction.isCommand() || interaction.isUserContextMenuCommand()) {
         banSchema.findOne({ User: interaction.user.id }, async (err, data) => {
