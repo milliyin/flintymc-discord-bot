@@ -11,7 +11,9 @@ module.exports = async (client, guild) => {
         channelName = channelName.replace(`{name}`, `Bots: ${members.filter(member => member.user.bot).size || 0}`)
 
         const data = await Schema.findOne({ Guild: guild.id });
+        if (!data) return;
         const channel = guild.channels.cache.get(data.Bots)
+        if (!channel) return;
         await channel.setName(channelName)
     }
     catch { }

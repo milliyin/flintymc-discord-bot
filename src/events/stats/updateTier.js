@@ -16,7 +16,9 @@ module.exports = async (client, guild) => {
         channelName = channelName.replace(`{name}`, `Tier: ${tier[guild.premiumTier] || '0'}`)
 
         const data = await Schema.findOne({ Guild: guild.id });
+        if (!data) return;
         const channel = guild.channels.cache.get(data.BoostTier)
+        if (!channel) return;
         await channel.setName(channelName)
     }
     catch { }

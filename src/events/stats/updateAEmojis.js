@@ -22,7 +22,9 @@ module.exports = async (client, emoji, guild) => {
             channelName = channelName.replace(`{name}`, `Animated Emojis: ${Animated || '0'}`)
 
             const data = await Schema.findOne({ Guild: guild.id });
+            if (!data) return;
             const channel = guild.channels.cache.get(data.AnimatedEmojis)
+            if (!channel) return;
             await channel.setName(channelName)
         }
         catch { }

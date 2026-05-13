@@ -19,10 +19,12 @@ module.exports = async (client, emoji, guild) => {
 
             var channelName = await client.getTemplate(guild);
             channelName = channelName.replace(`{emoji}`, "🤡")
-            channelName = channelName.replace(`{name}`, `Animated Emojis: ${Animated || '0'}`)
+            channelName = channelName.replace(`{name}`, `Static Emojis: ${EmojiCount || '0'}`)
 
             const data = await Schema.findOne({ Guild: guild.id });
+            if (!data) return;
             const channel = guild.channels.cache.get(data.StaticEmojis)
+            if (!channel) return;
             await channel.setName(channelName)
         }
         catch { }

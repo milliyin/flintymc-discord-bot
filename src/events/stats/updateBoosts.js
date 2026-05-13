@@ -9,7 +9,9 @@ module.exports = async (client, guild) => {
         channelName = channelName.replace(`{name}`, `Boosts: ${guild.premiumSubscriptionCount || '0'}`)
 
         const data = await Schema.findOne({ Guild: guild.id });
+        if (!data) return;
         const channel = guild.channels.cache.get(data.Boost)
+        if (!channel) return;
         await channel.setName(channelName)
     }
     catch { }

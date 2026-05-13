@@ -15,12 +15,14 @@ module.exports = async (client) => {
                     try {
                         const timeNow = moment().tz(d.TimeZone).format("HH:mm (z)");
                         const guild = client.guilds.cache.get(d.Guild);
+                        if (!guild) return;
 
                         var channelName = await client.getTemplate(guild);
                         channelName = channelName.replace(`{emoji}`, "⏰")
                         channelName = channelName.replace(`{name}`, `${timeNow}`)
 
                         const channel = guild.channels.cache.get(d.Time)
+                        if (!channel) return;
                         await channel.setName(channelName)
                     }
                     catch (e) { }

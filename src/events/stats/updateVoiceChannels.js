@@ -10,7 +10,9 @@ module.exports = async (client, channel, guild) => {
             channelName = channelName.replace(`{name}`, `Voice Channels: ${guild.channels.cache.filter(channel => channel.type ===  Discord.ChannelType.GuildVoice).size || 0}`)
 
             const data = await Schema.findOne({ Guild: guild.id });
+            if (!data) return;
             const changeChannel = guild.channels.cache.get(data.VoiceChannels)
+            if (!changeChannel) return;
             await changeChannel.setName(channelName)
         }
         catch { }

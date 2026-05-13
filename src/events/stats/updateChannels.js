@@ -9,7 +9,9 @@ module.exports = async (client, channel) => {
         channelName = channelName.replace(`{name}`, `Channels: ${channel.guild.channels.cache.size.toLocaleString()}`)
 
         const data = await Schema.findOne({ Guild: channel.guild.id });
+        if (!data) return;
         const changeChannel = channel.guild.channels.cache.get(data.Channels)
+        if (!changeChannel) return;
         await changeChannel.setName(channelName)
     }
     catch { }
