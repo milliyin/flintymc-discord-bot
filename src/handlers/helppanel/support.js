@@ -26,12 +26,6 @@ module.exports = async (client) => {
                                     emoji: "❓",
                                     value: "support-Bothelp",
                                 },
-                                {
-                                    label: `Changelogs`,
-                                    description: `Show the ${client.user.username} changelogs`,
-                                    emoji: "📃",
-                                    value: "changelogs-Bothelp",
-                                },
                             ]),
                     );
 
