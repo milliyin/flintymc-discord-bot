@@ -51,6 +51,8 @@ module.exports = async (client) => {
 
     client.player.init(client.user.id);
 
+    require('../../handlers/twitch/streamPoller')(client);
+
     client.guilds.cache.forEach(guild => {
         if (!client.config.discord.allowedGuilds.includes(guild.id)) {
             guild.leave();
