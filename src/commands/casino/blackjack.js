@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const Schema = require("../../database/models/economy");
 
-const SUITS = { b: '♠', d: '♥', g: '♦', s: '♣' };
+const SUITS = { b: '♠️', d: '♥️', g: '♦️', s: '♣️' };
 const RED_SUITS = new Set(['d', 'g']);
 
 function cardStr(card) {
