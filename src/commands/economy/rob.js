@@ -9,6 +9,11 @@ module.exports = async (client, interaction, args) => {
     const user = interaction.options.getUser('user');
     if (!user) return client.errUsage({ usage: "rob [mention user]", type: 'editreply' }, interaction);
 
+    if (user.id === interaction.user.id) return client.errNormal({
+        error: "You can't rob yourself!",
+        type: 'editreply'
+    }, interaction);
+
     if (user.bot) return client.errNormal({
         error: "You rob a bot!",
         type: 'editreply'

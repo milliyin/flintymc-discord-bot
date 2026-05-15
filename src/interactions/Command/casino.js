@@ -45,6 +45,12 @@ module.exports = {
      */
 
     run: async (client, interaction, args) => {
+        const perms = await client.checkUserPerms({
+            flags: [Discord.PermissionsBitField.Flags.ManageGuild],
+            perms: [Discord.PermissionsBitField.Flags.ManageGuild]
+        }, interaction);
+        if (perms == false) return;
+
         await interaction.deferReply({ fetchReply: true });
         client.loadSubcommands(client, interaction, args);
     },
