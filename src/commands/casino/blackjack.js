@@ -1,327 +1,179 @@
 const Discord = require('discord.js');
-
 const Schema = require("../../database/models/economy");
 
+const SUITS = { b: '♠', d: '♥', g: '♦', s: '♣' };
+const RED_SUITS = new Set(['d', 'g']);
+
+function cardStr(card) {
+    return `[${card.rank}${SUITS[card.suit]}]`;
+}
+
+function handStr(cards) {
+    return cards.map(cardStr).join(' ');
+}
+
+function getHandValue(cards) {
+    let sum = 0, aces = 0;
+    for (const c of cards) {
+        if (['J', 'Q', 'K'].includes(c.rank)) sum += 10;
+        else if (c.rank === 'A') { sum += 11; aces++; }
+        else sum += c.rank;
+    }
+    while (aces > 0 && sum > 21) { sum -= 10; aces--; }
+    return sum;
+}
+
+function buildDeck() {
+    const suits = ['b', 'd', 'g', 's'];
+    const ranks = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A'];
+    const deck = suits.flatMap(s => ranks.map(r => ({ rank: r, suit: s })));
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+}
+
+function bjEmbed(playerCards, dealerCards, dealerHidden, bet, balance, status) {
+    const pScore = getHandValue(playerCards);
+    const dScore = dealerHidden ? getHandValue([dealerCards[0]]) : getHandValue(dealerCards);
+
+    let color = '#c0a000';
+    if (status === 'win') color = '#00c853';
+    else if (status === 'lose') color = '#d50000';
+    else if (status === 'tie') color = '#5865F2';
+
+    const dealerDisplay = dealerHidden
+        ? `${cardStr(dealerCards[0])} [?]`
+        : handStr(dealerCards);
+    const dealerScoreDisplay = dealerHidden ? `${dScore}+?` : `${dScore}`;
+
+    return new Discord.EmbedBuilder()
+        .setTitle('♠️  B L A C K J A C K')
+        .setColor(color)
+        .addFields(
+            {
+                name: `🤖 Dealer  (${dealerScoreDisplay})`,
+                value: `\`${dealerDisplay}\``,
+                inline: false,
+            },
+            {
+                name: `👤 You  (${pScore})`,
+                value: `\`${handStr(playerCards)}\``,
+                inline: false,
+            },
+            { name: '💰 Bet', value: `$${bet.toLocaleString()}`, inline: true },
+            { name: '🏦 Balance', value: `$${balance.toLocaleString()}`, inline: true },
+        );
+}
+
 module.exports = async (client, interaction, args) => {
-    let user = interaction.user;
+    const user = interaction.user;
 
     Schema.findOne({ Guild: interaction.guild.id, User: user.id }, async (err, data) => {
-        if (data) {
-            let money = parseInt(interaction.options.getNumber('amount'));
+        if (!data) return client.errNormal({ error: `You don't have any coins!`, type: 'editreply' }, interaction);
 
-            if (!money) return client.errUsage({ usage: "blackjack [amount]", type: 'editreply' }, interaction);
-            if (money > data.Money) return client.errNormal({ error: `You are betting more than you have!`, type: 'editreply' }, interaction);
+        const money = parseInt(interaction.options.getNumber('amount'));
+        if (!money || money < 1) return client.errUsage({ usage: 'blackjack [amount]', type: 'editreply' }, interaction);
+        if (money > data.Money) return client.errNormal({ error: `You're betting more than you have!`, type: 'editreply' }, interaction);
 
-            var numCardsPulled = 0;
-            var gameOver = false;
-            var player = {
-                cards: [],
-                score: 0,
-            };
-            var dealer = {
-                cards: [],
-                score: 0,
-            };
-            function getCardsValue(a) {
-                var cardArray = [],
-                    sum = 0,
-                    i = 0,
-                    dk = 10.5,
-                    doubleking = "QQ",
-                    aceCount = 0;
-                cardArray = a;
-                for (i; i < cardArray.length; i += 1) {
-                    if (
-                        cardArray[i].rank === "J" ||
-                        cardArray[i].rank === "Q" ||
-                        cardArray[i].rank === "K"
-                    ) {
-                        sum += 10;
-                    } else if (cardArray[i].rank === "A") {
-                        sum += 11;
-                        aceCount += 1;
-                    } else if (cardArray[i].rank === doubleking) {
-                        sum += dk;
-                    } else {
-                        sum += cardArray[i].rank;
-                    }
-                }
-                while (aceCount > 0 && sum > 21) {
-                    sum -= 10;
-                    aceCount -= 1;
-                }
-                return sum;
+        const deck = buildDeck();
+        let di = 0;
+        const draw = () => deck[di++];
+
+        const player = [draw(), draw()];
+        const dealer = [draw(), draw()];
+
+        const hitRow = new Discord.ActionRowBuilder().addComponents(
+            new Discord.ButtonBuilder().setCustomId('bj_hit').setLabel('Hit 🃏').setStyle(Discord.ButtonStyle.Primary),
+            new Discord.ButtonBuilder().setCustomId('bj_stand').setLabel('Stand ✋').setStyle(Discord.ButtonStyle.Secondary),
+        );
+        const disabledRow = new Discord.ActionRowBuilder().addComponents(
+            new Discord.ButtonBuilder().setCustomId('bj_hit').setLabel('Hit 🃏').setStyle(Discord.ButtonStyle.Primary).setDisabled(true),
+            new Discord.ButtonBuilder().setCustomId('bj_stand').setLabel('Stand ✋').setStyle(Discord.ButtonStyle.Secondary).setDisabled(true),
+        );
+
+        async function endGame(result, embed) {
+            if (result === 'win') {
+                data.Money += money;
+                embed.addFields({ name: '✅ Result', value: `You **won** +$${money.toLocaleString()}!`, inline: false });
+            } else if (result === 'lose') {
+                data.Money -= money;
+                embed.addFields({ name: '❌ Result', value: `You **lost** -$${money.toLocaleString()}.`, inline: false });
+            } else {
+                embed.addFields({ name: '🤝 Result', value: `**Tie!** Bet returned.`, inline: false });
             }
+            data.save();
+            await interaction.editReply({ embeds: [embed], components: [disabledRow] });
+        }
 
-            var deck = {
-                deckArray: [],
-                initialize: function () {
-                    var suitArray, rankArray, s, r, n;
-                    suitArray = ["b", "d", "g", "s"];
-                    rankArray = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"];
-                    n = 13;
+        async function checkEnd(showDealer) {
+            const ps = getHandValue(player);
+            const ds = getHandValue(dealer);
 
-                    for (s = 0; s < suitArray.length; s += 1) {
-                        for (r = 0; r < rankArray.length; r += 1) {
-                            this.deckArray[s * n + r] = {
-                                rank: rankArray[r],
-                                suit: suitArray[s],
-                            };
-                        }
-                    }
-                },
-                shuffle: function () {
-                    var temp, i, rnd;
-                    for (i = 0; i < this.deckArray.length; i += 1) {
-                        rnd = Math.floor(Math.random() * this.deckArray.length);
-                        temp = this.deckArray[i];
-                        this.deckArray[i] = this.deckArray[rnd];
-                        this.deckArray[rnd] = temp;
-                    }
-                },
-            };
-            deck.initialize();
-            deck.shuffle();
-            async function bet(outcome) {
-                if (outcome === "win") {
-                    data.Money += money;
-                    data.save();
-                }
-                if (outcome === "lose") {
-                    data.Money -= money;
-                    data.save();
-                }
+            if (ps > 21) {
+                const e = bjEmbed(player, dealer, false, money, data.Money - money, 'lose')
+                    .setDescription('> 💥 Bust! You went over 21.');
+                await endGame('lose', e);
+                return true;
             }
+            if (ps === 21) {
+                const e = bjEmbed(player, dealer, false, money, data.Money + money, 'win')
+                    .setDescription('> 🎉 Blackjack! You hit 21!');
+                await endGame('win', e);
+                return true;
+            }
+            if (showDealer) {
+                // Dealer draws to 17
+                while (getHandValue(dealer) < 17) dealer.push(draw());
+                const ds2 = getHandValue(dealer);
 
-            function endMsg(f, msg, cl, dealerC) {
-                let cardsMsg = "";
-                player.cards.forEach(function (card) {
-                    var emAR = ["♥", "♦", "♠", "♣"];
-                    var t = emAR[Math.floor(Math.random() * emAR.length)];
-                    cardsMsg += t + card.rank.toString();
-                    if (card.suit == "d1") cardsMsg += "♥";
-                    if (card.suit == "d2") cardsMsg += "♦";
-                    if (card.suit == "d3") cardsMsg += "♠";
-                    if (card.suit == "d4") cardsMsg += "♣";
-                    cardsMsg;
-                });
-                cardsMsg += " > " + player.score.toString();
-
-                var dealerMsg = "";
-                if (!dealerC) {
-                    var emAR = ["♥", "♦", "♠", "♣"];
-                    var t = emAR[Math.floor(Math.random() * emAR.length)];
-                    dealerMsg = t + dealer.cards[0].rank.toString();
-                    if (dealer.cards[0].suit == "d1") dealerMsg += "♥";
-                    if (dealer.cards[0].suit == "d2") dealerMsg += "♦";
-                    if (dealer.cards[0].suit == "d3") dealerMsg += "♠";
-                    if (dealer.cards[0].suit == "d4") dealerMsg += "♣";
-                    dealerMsg;
+                if (ds2 > 21 || ps > ds2) {
+                    const e = bjEmbed(player, dealer, false, money, data.Money + money, 'win')
+                        .setDescription(`> ✅ You beat the dealer! (${ps} vs ${ds2})`);
+                    await endGame('win', e);
+                } else if (ps < ds2) {
+                    const e = bjEmbed(player, dealer, false, money, data.Money - money, 'lose')
+                        .setDescription(`> ❌ Dealer wins! (${ps} vs ${ds2})`);
+                    await endGame('lose', e);
                 } else {
-                    dealerMsg = "";
-                    dealer.cards.forEach(function (card) {
-                        var emAR = ["♥", "♦", "♠", "♣"];
-                        var t = emAR[Math.floor(Math.random() * emAR.length)];
-                        dealerMsg += t + card.rank.toString();
-                        if (card.suit == "d1") dealerMsg += "♥";
-                        if (card.suit == "d2") dealerMsg += "♦";
-                        if (card.suit == "d3") dealerMsg += "♠";
-                        if (card.suit == "d4") dealerMsg += "♣";
-                        dealerMsg;
-                    });
-                    dealerMsg += " > " + dealer.score.toString();
+                    const e = bjEmbed(player, dealer, false, money, data.Money, 'tie')
+                        .setDescription(`> 🤝 Tie! (${ps} vs ${ds2})`);
+                    await endGame('tie', e);
                 }
-
-                const row = new Discord.ActionRowBuilder()
-                    .addComponents(
-                        new Discord.ButtonBuilder()
-                            .setCustomId('blackjack_hit')
-                            .setLabel(`Hit`)
-                            .setStyle(Discord.ButtonStyle.Primary),
-
-                        new Discord.ButtonBuilder()
-                            .setCustomId('blackjack_stand')
-                            .setLabel(`Stand`)
-                            .setStyle(Discord.ButtonStyle.Primary),
-                    )
-
-                if (cl) {
-
-                    client.embed({
-                        title: `♦️・Blackjack`,
-                        desc: `${f} \n${msg}`,
-                        fields: [
-                            {
-                                name: `You`,
-                                value: cardsMsg,
-                                inline: true,
-                            },
-                            {
-                                name: `Bot`,
-                                value: dealerMsg,
-                                inline: true,
-                            }
-                        ],
-                        type: 'editreply'
-                    }, interaction)
-                }
-                else {
-                    client.embed({
-                        title: `♦️・Blackjack`,
-                        desc: `${f} \n${msg}`,
-                        fields: [
-                            {
-                                name: `You`,
-                                value: cardsMsg,
-                                inline: true,
-                            },
-                            {
-                                name: `Bot`,
-                                value: dealerMsg,
-                                inline: true,
-                            }
-                        ],
-                        components: [row],
-                        type: 'editreply'
-                    }, interaction)
-                }
+                return true;
             }
-
-            async function endGame() {
-                if (player.score === 21) {
-                    bet("win");
-                    gameOver = true;
-                    endMsg(
-                        `Win! You got 21!`,
-                        `Bot had ${dealer.score.toString()}`,
-                        `GREEN`
-                    );
-                }
-                if (player.score > 21) {
-                    bet("lose");
-                    gameOver = true;
-                    endMsg(
-                        `Lost! You reached over 21!`,
-                        `Bot had ${dealer.score.toString()}`,
-                        `RED`
-                    );
-                }
-                if (dealer.score === 21) {
-                    bet("lose");
-                    gameOver = true;
-                    endMsg(
-                        `Lost! The dealer got 21!`,
-                        `Bot had ${dealer.score.toString()}`,
-                        `RED`
-                    );
-                }
-                if (dealer.score > 21) {
-                    bet("win");
-                    gameOver = true;
-                    endMsg(
-                        `Win! Bot reached over 21!`,
-                        `Bot had ${dealer.score.toString()}`,
-                        `GREEN`
-                    );
-                }
-                if (
-                    dealer.score >= 17 &&
-                    player.score > dealer.score &&
-                    player.score < 21
-                ) {
-                    bet("win");
-                    gameOver = true;
-                    endMsg(
-                        `Win! You defeated Bot!`,
-                        `Bot had ${dealer.score.toString()}`,
-                        `GREEN`
-                    );
-                }
-                if (
-                    dealer.score >= 17 &&
-                    player.score < dealer.score &&
-                    dealer.score < 21
-                ) {
-                    bet("lose");
-                    gameOver = true;
-                    endMsg(
-                        `Lost! Bot won!`,
-                        `Bot had ${dealer.score.toString()}`,
-                        `RED`
-                    );
-                }
-                if (
-                    dealer.score >= 17 &&
-                    player.score === dealer.score &&
-                    dealer.score < 21
-                ) {
-                    gameOver = true;
-                    endMsg(`Tie!`, `Bot had ${dealer.score.toString()}`, `RED`);
-                }
-            }
-
-            function dealerDraw() {
-                dealer.cards.push(deck.deckArray[numCardsPulled]);
-                dealer.score = getCardsValue(dealer.cards);
-                numCardsPulled += 1;
-            }
-
-            function newGame() {
-                hit();
-                hit();
-                dealerDraw();
-                endGame();
-            }
-
-            function hit() {
-                player.cards.push(deck.deckArray[numCardsPulled]);
-                player.score = getCardsValue(player.cards);
-
-                numCardsPulled += 1;
-                if (numCardsPulled > 2) {
-                    endGame();
-                }
-            }
-
-            function stand() {
-                while (dealer.score < 17) {
-                    dealerDraw();
-                }
-                endGame();
-            }
-            newGame();
-            async function loop() {
-                if (gameOver) return;
-
-                endMsg(
-                    "To hit type `h`, for stand type `s`",
-                    `GoodLuck ;)`,
-                    client.color
-                );
-
-                const filter = i => i.user.id === interaction.user.id;
-                interaction.channel.awaitMessageComponent({ filter, max: 1, time: 1200000, errors: ["time"] })
-                    .then(async i => {
-                        if (i.customId == "blackjack_hit") {
-                            hit();
-                            loop();
-                            return i.deferUpdate();;
-                        } else if (i.customId == "blackjack_stand") {
-                            stand();
-                            loop();
-                            return i.deferUpdate();;
-                        }
-                    })
-                    .catch(_ => {
-                        interaction.channel.send("Lost!!");
-                        bet("lose");
-                        return;
-                    });
-            }
-            await loop();
+            return false;
         }
-        else {
-            client.errNormal({ error: `You don't have any ${client.emotes.economy.coins}!`, type: 'editreply' }, interaction);
-        }
-    })
-}
+
+        // Initial deal — check for natural blackjack
+        const initialEmbed = bjEmbed(player, dealer, true, money, data.Money, null)
+            .setDescription('> Your turn. Hit for another card or Stand to hold.');
+        await interaction.editReply({ embeds: [initialEmbed], components: [hitRow] });
+
+        if (await checkEnd(false)) return;
+
+        const filter = i => i.user.id === user.id && ['bj_hit', 'bj_stand'].includes(i.customId);
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 120000 });
+
+        collector.on('collect', async i => {
+            await i.deferUpdate();
+
+            if (i.customId === 'bj_hit') {
+                player.push(draw());
+                const embed = bjEmbed(player, dealer, true, money, data.Money, null)
+                    .setDescription('> Hit! Choose again.');
+                await interaction.editReply({ embeds: [embed], components: [hitRow] });
+                if (await checkEnd(false)) collector.stop();
+            } else {
+                collector.stop('stand');
+            }
+        });
+
+        collector.on('end', async (_, reason) => {
+            if (reason === 'stand' || reason === 'time') {
+                await checkEnd(true);
+            }
+        });
+    });
+};

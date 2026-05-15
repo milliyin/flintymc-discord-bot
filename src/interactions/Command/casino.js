@@ -36,6 +36,12 @@ module.exports = {
                 .setDescription('Play slots')
                 .addNumberOption(option => option.setName('amount').setDescription('Enter a amount').setRequired(true))
         )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('russianroulette')
+                .setDescription('Pull the trigger — survive for multiplying rewards, die and lose it all')
+                .addNumberOption(option => option.setName('amount').setDescription('Enter a bet amount').setRequired(true))
+        )
     ,
 
     /** 
