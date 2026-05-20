@@ -1,371 +1,151 @@
-const { CommandInteraction, Client } = require("discord.js");
+const { CommandInteraction, Client, ChannelType, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require("discord.js");
 const { SlashCommandBuilder } = require("discord.js");
-const { ChannelType } = require("discord.js");
-const Discord = require("discord.js");
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("embed")
-    .setDescription("Generate an embed")
-    .addChannelOption((option) =>
-      option
-        .setName("channel")
-        .setDescription("Channel where the embed should be")
-        .setRequired(true)
-        .addChannelTypes(ChannelType.GuildText)
-    ),
-  /**
-   * @param {Client} client
-   * @param {CommandInteraction} interaction
-   * @param {String[]} args
-   */
+    data: new SlashCommandBuilder()
+        .setName("embed")
+        .setDescription("Build and send a custom embed")
+        .addChannelOption((option) =>
+            option
+                .setName("channel")
+                .setDescription("Channel to send the embed in")
+                .setRequired(true)
+                .addChannelTypes(ChannelType.GuildText)
+        ),
 
-  run: async (client, interaction, args) => {
-    await interaction.deferReply({ fetchReply: true });
-    const perms = await client.checkPerms(
-      {
-        flags: [Discord.PermissionsBitField.Flags.ManageMessages],
-        perms: [Discord.PermissionsBitField.Flags.ManageMessages],
-      },
-      interaction
-    );
+    run: async (client, interaction, args) => {
+        await interaction.deferReply({ fetchReply: true, ephemeral: true });
 
-    if (perms == false) return;
+        const perms = await client.checkPerms({
+            flags: [PermissionsBitField.Flags.ManageMessages],
+            perms: [PermissionsBitField.Flags.ManageMessages],
+        }, interaction);
+        if (perms == false) return;
 
-    let row = new Discord.ActionRowBuilder().addComponents(
-      new Discord.StringSelectMenuBuilder()
-        .setCustomId("embedSelect")
-        .setPlaceholder("Nothing selected")
-        .addOptions([
-          {
-            emoji: "✏️",
-            label: "Title",
-            description: "Create a embed title",
-            value: "title_embed",
-          },
-          {
-            emoji: "💬",
-            label: "Description",
-            description: "Create a embed description",
-            value: "description_embed",
-          },
-          {
-            emoji: "🕵️",
-            label: "Author",
-            description: "Create a embed author",
-            value: "author_embed",
-          },
-          {
-            emoji: "🔻",
-            label: "Footer",
-            description: "Create a embed footer",
-            value: "footer_embed",
-          },
-          {
-            emoji: "🔳",
-            label: "Thumbnail",
-            description: "Create a embed thumbnail",
-            value: "thumbnail_embed",
-          },
-          {
-            emoji: "🕙",
-            label: "Timestamp",
-            description: "Create a embed timestamp",
-            value: "timestamp_embed",
-          },
-          {
-            emoji: "🖼️",
-            label: "Image",
-            description: "Create a embed image",
-            value: "image_embed",
-          },
-          {
-            emoji: "🌐",
-            label: "URL",
-            description: "Create a embed url",
-            value: "url_embed",
-          },
-          {
-            emoji: "🔵",
-            label: "Color",
-            description: "Create a embed color",
-            value: "color_embed",
-          },
-        ])
-    );
+        const targetChannel = interaction.options.getChannel("channel");
 
-    let row2 = new Discord.ActionRowBuilder().addComponents(
-      new Discord.ButtonBuilder()
-        .setCustomId("send_embed")
-        .setEmoji("✅")
-        .setLabel("Send embed")
-        .setStyle(Discord.ButtonStyle.Success)
-    );
+        const selectRow = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId("embedSelect")
+                .setPlaceholder("✏️ Select a field to edit...")
+                .addOptions([
+                    { emoji: "✏️", label: "Title",       description: "Set the embed title",       value: "title" },
+                    { emoji: "💬", label: "Description", description: "Set the embed description", value: "description" },
+                    { emoji: "🕵️", label: "Author",      description: "Set the embed author",      value: "author" },
+                    { emoji: "🔻", label: "Footer",      description: "Set the embed footer",      value: "footer" },
+                    { emoji: "🔳", label: "Thumbnail",   description: "Set a thumbnail URL",       value: "thumbnail" },
+                    { emoji: "🖼️", label: "Image",       description: "Set a large image URL",     value: "image" },
+                    { emoji: "🔵", label: "Color",       description: "Set color (e.g. #FF0000)",  value: "color" },
+                    { emoji: "🕙", label: "Timestamp",   description: "Toggle timestamp",          value: "timestamp" },
+                ])
+        );
 
-    let embed = new Discord.EmbedBuilder().setDescription(
-      `Please select some options`
-    );
+        const sendRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("send_embed")
+                .setEmoji("✅")
+                .setLabel("Send Embed")
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId("cancel_embed")
+                .setEmoji("❌")
+                .setLabel("Cancel")
+                .setStyle(ButtonStyle.Danger),
+        );
 
-    interaction.editReply({ embeds: [embed], components: [row, row2] });
+        const embed = new EmbedBuilder()
+            .setColor(client.config.colors.normal)
+            .setDescription("Use the dropdown below to build your embed, then click **Send Embed**.");
 
-    const filter = (i) => i.user.id === interaction.user.id;
-    const collector = interaction.channel.createMessageComponentCollector({
-      filter,
-    });
+        await interaction.editReply({ embeds: [embed], components: [selectRow, sendRow] });
 
-    collector.on("collect", async (i) => {
-      if (i.customId === "embedSelect") {
-        i.deferUpdate();
-
-        if (i.values == "title_embed") {
-          interaction.channel
-            .send({ content: "Please enter a title" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
-
-                  embed.setTitle(`${collected.first().content}`);
-                  await interaction.editReply({ embeds: [embed] });
+        async function promptInput(promptText) {
+            const prompt = await interaction.channel.send({ content: `📝 ${promptText} *(reply in this channel, 5 min timeout)*` });
+            try {
+                const collected = await interaction.channel.awaitMessages({
+                    filter: m => m.author.id === interaction.user.id && !m.author.bot,
+                    max: 1,
+                    time: 300000,
+                    errors: ["time"],
                 });
-            });
+                setTimeout(() => prompt.delete().catch(() => {}), 500);
+                setTimeout(() => collected.first().delete().catch(() => {}), 500);
+                return collected.first().content;
+            } catch {
+                prompt.delete().catch(() => {});
+                return null;
+            }
         }
 
-        if (i.values == "description_embed") {
-          interaction.channel
-            .send({ content: "Please enter a description" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
+        const filter = i => i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 600000 });
 
-                  embed.setDescription(`${collected.first().content}`);
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
+        collector.on("collect", async i => {
+            if (i.customId === "cancel_embed") {
+                await i.deferUpdate();
+                collector.stop();
+                return interaction.editReply({ content: "Cancelled.", embeds: [], components: [] });
+            }
 
-        if (i.values == "author_embed") {
-          interaction.channel
-            .send({ content: "Please enter a author" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
-
-                  embed.setAuthor({
-                    name: `${collected.first().content}`,
-                    iconURL: interaction.guild.iconURL({ size: 1024 }),
-                  });
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
-
-        if (i.values == "footer_embed") {
-          interaction.channel
-            .send({ content: "Please enter a footer" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
-
-                  embed.setFooter({
-                    text: `${collected.first().content}`,
-                  });
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
-
-        if (i.values == "thumbnail_embed") {
-          interaction.channel
-            .send({ content: "Please enter a thumbnail" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
-
-                  if (
-                    !collected.first().content.includes("http://") &&
-                    !collected.first().content.includes("https://")
-                  )
-                    return interaction.channel.send({
-                      content: "Incorrect thumbnail link!",
+            if (i.customId === "send_embed") {
+                await i.deferUpdate();
+                collector.stop();
+                try {
+                    await targetChannel.send({ embeds: [embed] });
+                    await interaction.editReply({
+                        content: `✅ Embed sent to ${targetChannel}!`,
+                        embeds: [],
+                        components: []
                     });
-                  embed.setThumbnail(`${collected.first().content}`);
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
+                } catch {
+                    await interaction.editReply({ content: `❌ Failed to send — check bot permissions in ${targetChannel}.`, embeds: [], components: [] });
+                }
+                return;
+            }
 
-        if (i.values == "thumbnail_embed") {
-          embed.setTimestamp();
-          interaction.editReply({ embeds: [embed] });
-        }
+            if (i.customId === "embedSelect") {
+                await i.deferUpdate();
+                const val = i.values[0];
 
-        if (i.values == "image_embed") {
-          interaction.channel
-            .send({ content: "Please enter a image" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
+                if (val === "timestamp") {
+                    embed.setTimestamp();
+                    return interaction.editReply({ embeds: [embed], components: [selectRow, sendRow] });
+                }
 
-                  if (
-                    !collected.first().content.includes("http://") &&
-                    !collected.first().content.includes("https://")
-                  )
-                    return interaction.channel.send({
-                      content: "Incorrect image link!",
-                    });
-                  embed.setImage(`${collected.first().content}`);
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
+                const prompts = {
+                    title:       "Enter the embed **title**:",
+                    description: "Enter the embed **description** (supports markdown & newlines):",
+                    author:      "Enter the **author name**:",
+                    footer:      "Enter the **footer text**:",
+                    thumbnail:   "Enter a **thumbnail image URL** (must start with https://):",
+                    image:       "Enter a **large image URL** (must start with https://):",
+                    color:       "Enter a **hex color** (e.g. `#FF0000`):",
+                };
 
-        if (i.values == "url_embed") {
-          interaction.channel
-            .send({ content: "Please enter a url" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
+                const input = await promptInput(prompts[val]);
+                if (!input) return;
 
-                  if (
-                    !collected.first().content.includes("http://") &&
-                    !collected.first().content.includes("https://")
-                  )
-                    return interaction.channel.send({
-                      content: "Incorrect url!",
-                    });
-                  embed.setURL(`${collected.first().content}`);
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
+                try {
+                    if (val === "title")       embed.setTitle(input);
+                    if (val === "description") embed.setDescription(input);
+                    if (val === "author")      embed.setAuthor({ name: input, iconURL: interaction.guild.iconURL({ size: 1024 }) });
+                    if (val === "footer")      embed.setFooter({ text: input });
+                    if (val === "thumbnail")   embed.setThumbnail(input);
+                    if (val === "image")       embed.setImage(input);
+                    if (val === "color")       embed.setColor(input);
+                } catch {
+                    return interaction.channel.send({ content: `❌ Invalid value for **${val}**. Try again.` })
+                        .then(m => setTimeout(() => m.delete().catch(() => {}), 4000));
+                }
 
-        if (i.values == "color_embed") {
-          interaction.channel
-            .send({ content: "Please enter a color. e.g. #FF0000" })
-            .then((message) => {
-              const filterMessage = (m) =>
-                m.author.id === interaction.user.id && !m.author.bot;
-              interaction.channel
-                .awaitMessages({
-                  filterMessage,
-                  max: 1,
-                  time: 300000,
-                  errors: ["time"],
-                })
-                .then(async (collected) => {
-                  message.delete({ timeout: 1000 });
-                  collected.delete({ timeout: 1000 });
+                await interaction.editReply({ embeds: [embed], components: [selectRow, sendRow] });
+            }
+        });
 
-                  embed.setColor(`${collected.first().content}`);
-                  await interaction.editReply({ embeds: [embed] });
-                });
-            });
-        }
-      }
-      if (i.customId == "send_embed") {
-        const channel = interaction.options.getChannel("channel");
-        if (!channel)
-          return client.errNormal(
-            { error: `Channel not found` },
-            collected.first().channel
-          );
-
-        channel
-          .createWebhook({
-            name: interaction.guild.name,
-            avatar: interaction.guild.iconURL(),
-          })
-          .then(async (_webhook) => {
-            await _webhook.send({ embeds: [embed] });
-
-            client.succNormal(
-              {
-                text: `Embed successfully sent in ${channel}`,
-                components: [],
-                type: "editreply",
-              },
-              interaction
-            );
-            collector.stop();
-
-            setTimeout(() => {
-              _webhook.delete();
-              i.message.delete();
-            }, 5000);
-          });
-      }
-    });
-  },
+        collector.on("end", (_, reason) => {
+            if (reason === "time") {
+                interaction.editReply({ content: "⏰ Embed builder timed out.", embeds: [], components: [] }).catch(() => {});
+            }
+        });
+    },
 };
-
- 
