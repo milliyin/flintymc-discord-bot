@@ -35,7 +35,7 @@ module.exports = {
                     { emoji: "🔻", label: "Footer",      description: "Set the embed footer",      value: "footer" },
                     { emoji: "🔳", label: "Thumbnail",   description: "Set a thumbnail URL",       value: "thumbnail" },
                     { emoji: "🖼️", label: "Image",       description: "Set a large image URL",     value: "image" },
-                    { emoji: "🔵", label: "Color",       description: "Set color (e.g. #FF0000)",  value: "color" },
+                    { emoji: "🎨", label: "Color",       description: "Pick from preset colors",   value: "color" },
                     { emoji: "🕙", label: "Timestamp",   description: "Toggle timestamp",          value: "timestamp" },
                 ])
         );
@@ -103,6 +103,12 @@ module.exports = {
                 return;
             }
 
+            if (i.customId === "embedColor") {
+                await i.deferUpdate();
+                embed.setColor(i.values[0]);
+                return interaction.editReply({ embeds: [embed], components: [selectRow, sendRow] });
+            }
+
             if (i.customId === "embedSelect") {
                 await i.deferUpdate();
                 const val = i.values[0];
@@ -112,6 +118,32 @@ module.exports = {
                     return interaction.editReply({ embeds: [embed], components: [selectRow, sendRow] });
                 }
 
+                if (val === "color") {
+                    const colorRow = new ActionRowBuilder().addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId("embedColor")
+                            .setPlaceholder("🎨 Pick a color...")
+                            .addOptions([
+                                { emoji: "🔴", label: "Red",        value: "#ED4245" },
+                                { emoji: "🟠", label: "Orange",     value: "#E67E22" },
+                                { emoji: "🟡", label: "Yellow",     value: "#F1C40F" },
+                                { emoji: "🟢", label: "Green",      value: "#57F287" },
+                                { emoji: "🔵", label: "Blue",       value: "#5865F2" },
+                                { emoji: "🟣", label: "Purple",     value: "#9B59B6" },
+                                { emoji: "🩷", label: "Pink",       value: "#EB459E" },
+                                { emoji: "🩵", label: "Cyan",       value: "#1ABC9C" },
+                                { emoji: "⚫", label: "Dark",       value: "#23272A" },
+                                { emoji: "⚪", label: "White",      value: "#FFFFFF" },
+                                { emoji: "🤍", label: "Light Gray", value: "#99AAB5" },
+                                { emoji: "🟤", label: "Brown",      value: "#A0522D" },
+                                { emoji: "🌸", label: "Blush",      value: "#FFB6C1" },
+                                { emoji: "🌊", label: "Teal",       value: "#008080" },
+                                { emoji: "✨", label: "Gold",       value: "#FFD700" },
+                            ])
+                    );
+                    return interaction.editReply({ embeds: [embed], components: [colorRow, sendRow] });
+                }
+
                 const prompts = {
                     title:       "Enter the embed **title**:",
                     description: "Enter the embed **description** (supports markdown & newlines):",
@@ -119,7 +151,6 @@ module.exports = {
                     footer:      "Enter the **footer text**:",
                     thumbnail:   "Enter a **thumbnail image URL** (must start with https://):",
                     image:       "Enter a **large image URL** (must start with https://):",
-                    color:       "Enter a **hex color** (e.g. `#FF0000`):",
                 };
 
                 const input = await promptInput(prompts[val]);
@@ -132,7 +163,6 @@ module.exports = {
                     if (val === "footer")      embed.setFooter({ text: input });
                     if (val === "thumbnail")   embed.setThumbnail(input);
                     if (val === "image")       embed.setImage(input);
-                    if (val === "color")       embed.setColor(input);
                 } catch {
                     return interaction.channel.send({ content: `❌ Invalid value for **${val}**. Try again.` })
                         .then(m => setTimeout(() => m.delete().catch(() => {}), 4000));
